@@ -59,12 +59,9 @@
       width: 100px;
       height: 100px;
       border-radius: 50%;
-      background: var(--accent);
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 2.5rem;
-      margin-bottom: 1rem;
+      object-position: 50% 90%;
+      display: inline-block;
+      object-fit: cover;
       border: 3px solid var(--accent);
     }
     .section {
@@ -92,12 +89,16 @@
       gap: 1.5rem;
     }
     .project-card {
+      display: block;
+      text-decoration: none;
+      color: inherit;
       background: var(--card-bg);
       padding: 1.5rem;
       border-radius: 12px;
       border: 1px solid var(--border);
       box-shadow: 0 4px 12px var(--shadow);
       transition: transform 0.2s, box-shadow 0.2s;
+      cursor: pointer;
     }
     .project-card:hover {
       transform: translateY(-4px);
@@ -151,33 +152,27 @@
 <body>
   <div class="container">
     <header>
-      <div class="avatar">N</div>
-      <h1>Hi, I'm nickj1h</h1>
-      <p class="tagline">开发者 · 探索者 · 终身学习者</p>
+      <img src="avatar.jpg" alt="头像 - Ji Yaohua" class="avatar">
+      <h1>Hi, I'm Ji Yaohua</h1>
+      <p class="tagline">第九艺术爱好者</p>
       <div class="links">
         <a href="https://github.com/nickj1h" class="link-btn" target="_blank">GitHub</a>
-        <a href="mailto:nickj1h@example.com" class="link-btn" target="_blank">Email</a>
+        <a href="mailto:Jiyaohua_hk@163.com" class="link-btn" target="_blank">Email</a>
         <!-- 可添加更多链接 -->
       </div>
     </header>
-
     <section class="section">
       <h2>✨ 我的项目</h2>
       <div class="projects">
-        <div class="project-card">
-          <h3>实用工具集</h3>
-          <p>一个集合常用小工具的网页应用，支持一键操作。</p>
-        </div>
-        <div class="project-card">
+        <a href="https://www.baidu.com" class="project-card" target="_blank" rel="noopener noreferrer">
           <h3>学习笔记</h3>
-          <p>记录编程、算法和系统设计的学习心得。</p>
-        </div>
-        <!-- 可继续添加项目 -->
+          <p>记录学习心得。</p>
+        </a>
       </div>
     </section>
 
     <footer>
-      <p>© 2025 nickj1h. Made with ❤️ and GitHub Pages.</p>
+      <p>© 2025 nickj1h.</p>
     </footer>
   </div>
 
