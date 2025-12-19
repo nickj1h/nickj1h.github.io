@@ -494,23 +494,7 @@
 输入：nums = [2,7,11,15], target = 9
 输出：[0,1]
 解释：因为 nums[0] + nums[1] == 9 ，返回 [0, 1] 。`,
-            code: `// 哈希表解法 O(n)
-var twoSum = function(nums, target) {
-  // 创建哈希表存储 {值: 下标}
-  const map = new Map();
-  
-  for (let i = 0; i < nums.length; i++) {
-    const complement = target - nums[i];
-    
-    if (map.has(complement)) {
-      return [map.get(complement), i];
-    }
-    
-    // 否则将当前数存入哈希表
-    map.set(nums[i], i);
-  }
-  
-  return []; // 题目保证有解，此行不会执行
+            code: `
 };`
           }
         ];
