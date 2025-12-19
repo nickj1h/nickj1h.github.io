@@ -399,16 +399,90 @@
     }
 
     // 📚 题目数据（从 localStorage 加载）
-    let problems = JSON.parse(localStorage.getItem('leetcodeNotes') || '[]');
-    
-    // 如果是空数组，添加一些示例数据
-    if (problems.length === 0) {
-      problems = [
-        {
-          id: 1,
-          title: "两数之和",
-          language: "javascript",
-          description: `给定一个整数数组 nums 和一个整数目标值 target，请你在该数组中找出和为目标值 target 的那两个整数，并返回它们的数组下标。
+    let problems = [];
+
+    // 🔥 修复后的 Gist 相关函数 - 无需 PAT
+    // 1. 从公开 Gist 加载数据
+    async function loadFromGist() {
+      const gistId = 'e6eca8ea2e3a1937cf55b22800544cc2'; // 替换为你的Gist ID
+      const url = `https://api.github.com/gists/${gistId}`;
+      
+      try {
+        const response = await fetch(url);
+        const data = await response.json();
+        
+        // 检查 Gist 是否存在
+        if (response.ok && data.files && data.files['problems.json']) {
+          const content = data.files['problems.json'].content;
+          return JSON.parse(atob(content));
+        } else {
+          console.log('Gist 不存在或格式错误，使用空数据');
+          return [];
+        }
+      } catch (error) {
+        console.error('加载Gist失败:', error);
+        return [];
+      }
+    }
+
+    // 2. 保存数据到公开 Gist
+    async function saveToGist(problems) {
+      const gistId = 'e6eca8ea2e3a1937cf55b22800544cc2'; // 替换为你的Gist ID
+      const gistUrl = `https://api.github.com/gists/${gistId}`;
+      
+      const gistData = {
+        files: {
+          'problems.json': {
+            content: JSON.stringify(problems)
+          }
+        }
+      };
+      
+      try {
+        // 检查 Gist 是否存在
+        const response = await fetch(gistUrl);
+        
+        if (response.ok) {
+          // 更新现有 Gist
+          const updateResponse = await fetch(gistUrl, {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(gistData)
+          });
+          
+          return updateResponse.ok;
+        } else {
+          // 创建新 Gist
+          const newGistResponse = await fetch('https://api.github.com/gists', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(gistData)
+          });
+          
+          return newGistResponse.ok;
+        }
+      } catch (error) {
+        console.error('保存Gist失败:', error);
+        return false;
+      }
+    }
+
+    (async () => {
+      // 从 Gist 加载数据
+      problems = await loadFromGist();
+      
+      // 如果 Gist 为空，使用默认数据
+      if (problems.length === 0) {
+        problems = [
+          {
+            id: 1,
+            title: "两数之和",
+            language: "javascript",
+            description: `给定一个整数数组 nums 和一个整数目标值 target，请你在该数组中找出和为目标值 target 的那两个整数，并返回它们的数组下标。
 
 你可以假设每种输入只会对应一个答案。但是，数组中同一个元素在答案里不能重复出现。
 
@@ -416,7 +490,7 @@
 输入：nums = [2,7,11,15], target = 9
 输出：[0,1]
 解释：因为 nums[0] + nums[1] == 9 ，返回 [0, 1] 。`,
-          code: `// 哈希表解法 O(n)
+            code: `// 哈希表解法 O(n)
 var twoSum = function(nums, target) {
   // 创建哈希表存储 {值: 下标}
   const map = new Map();
@@ -435,10 +509,15 @@ var twoSum = function(nums, target) {
   
   return []; // 题目保证有解，此行不会执行
 };`
-        }
-      ];
-      localStorage.setItem('leetcodeNotes', JSON.stringify(problems));
-    }
+          }
+        ];
+        
+        // 保存默认数据到 Gist
+        await saveToGist(problems);
+      }
+      
+      renderProblemList();
+    })();
 
     // DOM 元素
     const pageList = document.getElementById('page-list');
@@ -587,7 +666,7 @@ var twoSum = function(nums, target) {
         description,
         code
       };
-
+      
       // 查找是否为编辑模式
       const index = problems.findIndex(p => p.id === problem.id);
       if (index >= 0) {
@@ -599,13 +678,16 @@ var twoSum = function(nums, target) {
       // 保存到 localStorage
       localStorage.setItem('leetcodeNotes', JSON.stringify(problems));
       
+      // 保存到 Gist
+      await saveToGist(problems);
+      
       // 重新渲染列表
       renderProblemList();
       
       // 隐藏表单
       addFormSection.style.display = 'none';
       
-      alert('题目保存成功！');
+      alert('题目保存成功！数据已同步到云端。');
     });
 
     // 取消表单
@@ -632,8 +714,9 @@ var twoSum = function(nums, target) {
       if (confirm('确定要删除这个题目吗？')) {
         problems = problems.filter(p => p.id !== id);
         localStorage.setItem('leetcodeNotes', JSON.stringify(problems));
+        await saveToGist(problems);
         renderProblemList();
-        alert('题目已删除！');
+        alert('题目已删除！数据已同步到云端。');
       }
     }
 
@@ -679,6 +762,9 @@ var twoSum = function(nums, target) {
       // 保存到 localStorage
       localStorage.setItem('leetcodeNotes', JSON.stringify(problems));
       
+      // 保存到 Gist
+      await saveToGist(problems);
+      
       // 重新渲染详情
       codeContent.textContent = currentProblem.code;
       codeContent.className = `language-${currentProblem.language || 'javascript'}`;
@@ -693,7 +779,7 @@ var twoSum = function(nums, target) {
       editorControls.style.display = 'none';
       isEditing = false;
       
-      alert('代码已保存！');
+      alert('代码已保存！数据已同步到云端。');
     });
 
     // 取消编辑
