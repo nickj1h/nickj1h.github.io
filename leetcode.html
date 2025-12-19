@@ -3,9 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>LeetCode 刷题笔记</title>
+  <title>LeetCode 刷题笔记 (云端同步版)</title>
   
-  <!-- 🔥 Prism.js 语法高亮主题 -->
   <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
   
   <style>
@@ -50,6 +49,13 @@
     h1 {
       font-size: 2rem;
       color: var(--accent);
+    }
+    .status-bar {
+        text-align: center;
+        font-size: 0.85rem;
+        color: var(--comment);
+        margin-bottom: 1rem;
+        height: 20px;
     }
     .btn-back {
       display: inline-block;
@@ -263,10 +269,26 @@
     .auth-btn:hover {
       opacity: 0.9;
     }
+    
+    /* Loading 指示器 */
+    .loader {
+        display: none;
+        border: 4px solid #f3f3f3;
+        border-radius: 50%;
+        border-top: 4px solid var(--accent);
+        width: 30px;
+        height: 30px;
+        -webkit-animation: spin 2s linear infinite; /* Safari */
+        animation: spin 2s linear infinite;
+        margin: 20px auto;
+    }
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
   </style>
 </head>
 <body>
-  <!-- 🔐 编辑密码验证遮罩层 -->
   <div id="authLayer" class="auth-container" style="display: none;">
     <div class="auth-form">
       <h2>请输入编辑密码</h2>
@@ -275,16 +297,16 @@
     </div>
   </div>
 
-  <!-- 主内容 -->
   <div class="container">
-    <!-- 一级页面：题目列表 -->
     <div id="page-list" class="page">
       <header>
         <h1>LeetCode 刷题笔记</h1>
+        <div id="status" class="status-bar">准备就绪</div>
         <button class="btn" id="addProblemBtn">+ 添加新题目</button>
       </header>
       
-      <!-- 添加/编辑题目表单 -->
+      <div id="loader" class="loader"></div>
+
       <div id="addFormSection" class="form-section" style="display: none;">
         <h3 id="formTitle">添加新题目</h3>
         <form id="problemForm">
@@ -320,11 +342,9 @@
       </div>
       
       <div class="problem-list" id="problemList">
-        <!-- 动态生成 -->
-      </div>
+        </div>
     </div>
 
-    <!-- 二级页面：题目详情 -->
     <div id="page-detail" class="page problem-detail">
       <a href="#" class="btn-back" id="backBtn">← 返回列表</a>
       <div class="problem-header">
@@ -338,7 +358,6 @@
       <div class="code-section">
         <h2>参考代码</h2>
         <div class="editor-container">
-          <!-- 🔥 Prism 高亮容器 -->
           <pre id="codePreview" class="code-preview"><code id="codeContent"></code></pre>
           <textarea class="code-editor" id="codeEditor" spellcheck="false" style="display: none;"></textarea>
         </div>
@@ -351,10 +370,29 @@
   </div>
 
   <script>
+    // ==========================================
+    // ⚠️ 关键配置：请在这里填入你的 Google Apps Script Web App URL
+    // ==========================================
+    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycby2_fzmLtw7RsVxmeKrv638cTjGjGsLN-pqiwpRwXnpSTC8Mf66r0cbbCw-k4SURg/exec'; 
+    // 例如: 'https://script.google.com/macros/s/AKfycbx.../exec'
+
+    // 状态管理
+    const statusEl = document.getElementById('status');
+    const loaderEl = document.getElementById('loader');
+
+    function updateStatus(msg, isLoading = false) {
+        statusEl.textContent = msg;
+        loaderEl.style.display = isLoading ? 'block' : 'none';
+        if(isLoading) {
+            document.getElementById('problemList').style.opacity = '0.5';
+        } else {
+            document.getElementById('problemList').style.opacity = '1';
+        }
+    }
+
     // 🔐 简单的密码验证函数
     function verifyPassword() {
       return new Promise((resolve) => {
-        // 显示密码验证层
         document.getElementById('authLayer').style.display = 'flex';
         const passwordInput = document.getElementById('passwordInput');
         const authBtn = document.getElementById('authBtn');
@@ -362,7 +400,6 @@
         passwordInput.value = '';
         passwordInput.focus();
         
-        // 临时事件监听器
         const handleAuth = () => {
           const inputPassword = passwordInput.value;
           if (!inputPassword) {
@@ -370,8 +407,8 @@
             return;
           }
 
-          // 简单的哈希验证
-          const expectedPassword = 'nickj1h'; // 请修改为你的密码
+          // 简单的哈希验证 (密码: nickj1h)
+          const expectedPassword = 'nickj1h'; 
           const inputHash = btoa(unescape(encodeURIComponent(inputPassword)));
           const expectedHash = btoa(unescape(encodeURIComponent(expectedPassword)));
 
@@ -388,90 +425,78 @@
 
         authBtn.onclick = handleAuth;
         passwordInput.onkeypress = (e) => {
-          if (e.key === 'Enter') {
-            handleAuth();
-          }
+          if (e.key === 'Enter') handleAuth();
         };
       });
     }
 
-    // 📚 题目数据（从 Google Sheets 加载）
+    // 📚 题目数据
     let problems = [];
 
-    // 🔥 从 Google Sheets Web App 加载数据
-    async function loadFromGoogleSheets() {
-      // 替换为你的 Google Sheets Web App URL
-      const webAppUrl = 'https://script.google.com/macros/s/AKfycbzMthavdcMS_6TA21dZjppnBkb8AhWP4Bew65h5f6GoMhhJcWQuElDvMCkMe2bFpfE/exec';
-      
-      try {
-        const response = await fetch(webAppUrl + '?action=getProblems');
-        const data = await response.json();
-        
-        if (data.success && data.problems) {
-          return data.problems;
-        } else {
-          console.log('Google Sheets 数据加载失败，使用默认数据');
-          return [];
+    // 🔥 核心功能：加载云端数据
+    async function loadFromCloud() {
+        if(WEB_APP_URL.includes("你的_GOOGLE_SCRIPT_URL")) {
+            alert("请先编辑 HTML 代码，填入正确的 WEB_APP_URL！");
+            return;
         }
-      } catch (error) {
-        console.error('加载 Google Sheets 失败:', error);
-        return [];
-      }
+
+        updateStatus('正在同步云端数据...', true);
+        try {
+            const res = await fetch(WEB_APP_URL);
+            const data = await res.json();
+            
+            if(data.status === 'success') {
+                problems = data.problems || [];
+                renderProblemList();
+                updateStatus(`同步成功！共 ${problems.length} 题`);
+            } else {
+                updateStatus('云端数据格式错误');
+            }
+        } catch (e) {
+            console.error(e);
+            updateStatus('同步失败，请检查网络');
+            // 如果失败，可以使用本地缓存或空数据
+        }
     }
 
-    // 🔥 保存数据到 Google Sheets Web App
-    async function saveToGoogleSheets(problems) {
-      // 替换为你的 Google Sheets Web App URL
-      const webAppUrl = 'https://script.google.com/macros/s/AKfycbzMthavdcMS_6TA21dZjppnBkb8AhWP4Bew65h5f6GoMhhJcWQuElDvMCkMe2bFpfE/exec';
-      
-      try {
-        const response = await fetch(webAppUrl + '?action=saveProblems', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ problems })
-        });
+    // 🔥 核心功能：保存到云端 (全量覆盖)
+    async function saveToCloud() {
+        updateStatus('正在保存到 Google Sheets...', true);
         
-        const data = await response.json();
-        return data.success;
-      } catch (error) {
-        console.error('保存到 Google Sheets 失败:', error);
-        return false;
-      }
+        // 构建 payload
+        const payload = {
+            problems: problems
+        };
+
+        try {
+            // 使用 text/plain 是为了避免 GAS 的 CORS 复杂预检
+            const res = await fetch(WEB_APP_URL, {
+                method: 'POST',
+                body: JSON.stringify(payload),
+                headers: {
+                    'Content-Type': 'text/plain;charset=utf-8', 
+                },
+            });
+            
+            const result = await res.json();
+            if(result.status === 'success') {
+                updateStatus('保存成功！');
+                return true;
+            } else {
+                throw new Error(result.message);
+            }
+        } catch (e) {
+            console.error(e);
+            alert('保存失败: ' + e.message);
+            updateStatus('保存失败');
+            return false;
+        }
     }
 
-    // 从 Google Sheets Web App 重新加载数据并渲染列表
-    async function reloadFromGoogleSheetsAndRender() {
-      problems = await loadFromGoogleSheets();
-      renderProblemList();
-    }
+    // 初始化：加载数据
+    loadFromCloud();
 
-    (async () => {
-      // 从 Google Sheets Web App 加载数据
-      problems = await loadFromGoogleSheets();
-      
-      // 如果 Google Sheets 为空，使用默认数据
-      if (problems.length === 0) {
-        // 使用默认数据
-        problems = [
-          {
-            id: 1,
-            title: "两数之和",
-            language: "javascript",
-            description: `。`,
-            code: `.`
-          }
-        ];
-        
-        // 保存到 Google Sheets Web App
-        await saveToGoogleSheets(problems);
-      }
-      
-      renderProblemList();
-    })();
-
-    // DOM 元素
+    // DOM 元素引用
     const pageList = document.getElementById('page-list');
     const pageDetail = document.getElementById('page-detail');
     const problemListEl = document.getElementById('problemList');
@@ -479,7 +504,7 @@
     const detailDesc = document.getElementById('detailDesc');
     const codeEditor = document.getElementById('codeEditor');
     const codePreview = document.getElementById('codePreview');
-    const codeContent = document.getElementById('codeContent'); // 获取 code 元素
+    const codeContent = document.getElementById('codeContent');
     const backBtn = document.getElementById('backBtn');
     const addProblemBtn = document.getElementById('addProblemBtn');
     const addFormSection = document.getElementById('addFormSection');
@@ -492,30 +517,34 @@
     const cancelEditBtn = document.getElementById('cancelEditBtn');
     const editorControls = document.getElementById('editorControls');
 
-    // 当前选中的题目
     let currentProblem = null;
     let isEditing = false;
 
-    // 渲染题目列表
+    // 渲染列表
     function renderProblemList() {
       problemListEl.innerHTML = '';
-      problems.forEach(problem => {
+      if(problems.length === 0) {
+          problemListEl.innerHTML = '<div style="text-align:center; padding:20px; color:#a0aec0;">暂无题目，点击上方添加</div>';
+          return;
+      }
+      
+      // 按 ID 倒序排列（新题目在前）
+      const sortedProblems = [...problems].reverse();
+
+      sortedProblems.forEach(problem => {
         const item = document.createElement('div');
         item.className = 'problem-item';
+        // 阻止按钮冒泡
         item.innerHTML = `
-          <div class="problem-title">${problem.title}</div>
-          <div class="problem-desc-preview">${problem.description.split('\n')[0]}</div>
-          <div class="problem-actions">
-            <button class="btn" onclick="editProblem(${problem.id})">编辑</button>
-            <button class="btn btn-danger" onclick="deleteProblem(${problem.id})">删除</button>
-          </div>
+          <div class="problem-title">${problem.title} <span style="font-size:0.8em; color:#a0aec0; font-weight:normal">(${problem.language})</span></div>
+          <div class="problem-desc-preview">${problem.description}</div>
         `;
         item.onclick = () => showProblemDetail(problem);
         problemListEl.appendChild(item);
       });
     }
 
-    // 显示题目详情
+    // 显示详情
     function showProblemDetail(problem) {
       currentProblem = problem;
       isEditing = false;
@@ -523,57 +552,47 @@
       detailTitle.textContent = problem.title;
       detailDesc.textContent = problem.description;
 
-      // 🔥 设置代码预览（带语法高亮）
       codeContent.textContent = problem.code;
       codeContent.className = `language-${problem.language || 'javascript'}`;
       
-      // 确保 Prism 已加载后再高亮
       if (typeof Prism !== 'undefined' && Prism.highlightElement) {
         Prism.highlightElement(codeContent);
       } else {
-        // 如果 Prism 还没加载完，延迟执行
-        setTimeout(() => {
-          if (typeof Prism !== 'undefined' && Prism.highlightElement) {
-            Prism.highlightElement(codeContent);
-          }
-        }, 100);
+        setTimeout(() => Prism.highlightElement(codeContent), 100);
       }
 
-      // 隐藏编辑器，显示预览
       codeEditor.style.display = 'none';
       codePreview.style.display = 'block';
       editorControls.style.display = 'none';
 
       pageList.style.display = 'none';
       pageDetail.style.display = 'block';
+      window.scrollTo(0, 0);
     }
 
-    // 监听编辑器内容变化
+    // 监听编辑器
     codeEditor.addEventListener('input', () => {
       if (currentProblem) {
-        // 更新预览
         codeContent.textContent = codeEditor.value;
         codeContent.className = `language-${currentProblem.language || 'javascript'}`;
-        
         if (typeof Prism !== 'undefined' && Prism.highlightElement) {
           Prism.highlightElement(codeContent);
         }
       }
     });
 
-
+    // 联动滚动
     codeEditor.addEventListener('scroll', () => {
       codePreview.scrollTop = codeEditor.scrollTop;
       codePreview.scrollLeft = codeEditor.scrollLeft;
     });
 
-    // 显示添加/编辑表单（需要密码验证）
+    // 表单控制
     async function showForm(problem = null) {
       const auth = await verifyPassword();
       if (!auth) return;
 
       if (problem) {
-        // 编辑模式
         formTitle.textContent = '编辑题目';
         document.getElementById('problemTitle').value = problem.title;
         document.getElementById('problemLanguage').value = problem.language || 'javascript';
@@ -581,19 +600,17 @@
         document.getElementById('problemCode').value = problem.code;
         document.getElementById('problemId').value = problem.id;
       } else {
-        // 添加模式
         formTitle.textContent = '添加新题目';
         document.getElementById('problemForm').reset();
         document.getElementById('problemLanguage').value = 'javascript';
         document.getElementById('problemId').value = '';
       }
       
-      pageList.style.display = 'block';
-      pageDetail.style.display = 'none';
       addFormSection.style.display = 'block';
+      window.scrollTo(0, 0);
     }
 
-    // 保存表单（需要密码验证）
+    // 保存表单提交
     problemForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       
@@ -604,98 +621,63 @@
       const language = document.getElementById('problemLanguage').value;
       const description = document.getElementById('problemDescription').value;
       const code = document.getElementById('problemCode').value;
-      const id = document.getElementById('problemId').value || Date.now();
+      const idInput = document.getElementById('problemId').value;
       
-      if (!title || !description || !code) {
-        alert('请填写完整信息！');
-        return;
-      }
-
-      const problem = {
-        id: parseInt(id),
-        title,
-        language,
-        description,
-        code
-      };
+      // 如果没有ID，生成时间戳ID
+      const id = idInput ? parseInt(idInput) : Date.now();
       
-      // 查找是否为编辑模式
-      const index = problems.findIndex(p => p.id === problem.id);
+      const newProblem = { id, title, language, description, code };
+      
+      // 更新本地数据
+      const index = problems.findIndex(p => p.id === id);
       if (index >= 0) {
-        problems[index] = problem; // 更新
+        problems[index] = newProblem;
       } else {
-        problems.push(problem); // 新增
+        problems.push(newProblem);
       }
 
-      // 保存到 Google Sheets Web App
-      const success = await saveToGoogleSheets(problems);
+      // 同步到云端
+      const success = await saveToCloud();
       
       if (success) {
-        // 重新渲染列表
         renderProblemList();
-        
-        // 隐藏表单
         addFormSection.style.display = 'none';
-        
-        alert('题目保存成功！数据已同步到云端。');
-      } else {
-        alert('保存失败，请稍后重试。');
       }
     });
 
-    // 取消表单
     cancelFormBtn.addEventListener('click', () => {
       addFormSection.style.display = 'none';
     });
 
-    // 添加新题目按钮（需要密码验证）
     addProblemBtn.addEventListener('click', () => {
       showForm();
     });
 
-    // 编辑题目按钮（需要密码验证）
-    editBtn.addEventListener('click', () => {
-      if (!currentProblem) return;
-      showForm(currentProblem);
+    // 删除逻辑
+    deleteBtn.addEventListener('click', async () => {
+       const auth = await verifyPassword();
+       if (!auth) return;
+
+       if (confirm('确定要删除这个题目吗？')) {
+           problems = problems.filter(p => p.id !== currentProblem.id);
+           const success = await saveToCloud();
+           if(success) {
+               pageDetail.style.display = 'none';
+               pageList.style.display = 'block';
+               renderProblemList();
+           }
+       }
     });
+    
+    // 列表页快捷删除
+    // 注意：由于现在的 HTML 结构去掉了列表页的按钮以简化逻辑，
+    // 如果需要列表页删除，需要重新绑定事件，这里从详情页删除更安全。
 
-    // 删除题目（需要密码验证）
-    async function deleteProblem(id) {
-      const auth = await verifyPassword();
-      if (!auth) return;
-
-      if (confirm('确定要删除这个题目吗？')) {
-        problems = problems.filter(p => p.id !== id);
-        
-        // 保存到 Google Sheets Web App
-        const success = await saveToGoogleSheets(problems);
-        
-        if (success) {
-          // 重新渲染列表
-          renderProblemList();
-          alert('题目已删除！数据已同步到云端。');
-        } else {
-          alert('删除失败，请稍后重试。');
-        }
-      }
-    }
-
-    // 删除当前题目按钮（需要密码验证）
-    deleteBtn.addEventListener('click', () => {
-      if (!currentProblem) return;
-      deleteProblem(currentProblem.id);
-      pageDetail.style.display = 'none';
-      pageList.style.display = 'block';
-    });
-
-    // 编辑代码按钮（需要密码验证）
+    // 编辑题目按钮
     editBtn.addEventListener('click', async () => {
-      if (!currentProblem) return;
-      
       const auth = await verifyPassword();
       if (!auth) return;
       
-      // 切换到编辑模式
       codeEditor.value = currentProblem.code;
       codeEditor.style.display = 'block';
       codePreview.style.display = 'none';
@@ -703,46 +685,29 @@
       isEditing = true;
     });
 
-    // 保存编辑（需要密码验证）
+    // 保存代码修改
     saveEditBtn.addEventListener('click', async () => {
-      if (!currentProblem) return;
-      
       const auth = await verifyPassword();
       if (!auth) return;
       
-      // 更新当前题目的代码
       currentProblem.code = codeEditor.value;
       
-      // 更新到数组中
+      // 更新数组
       const index = problems.findIndex(p => p.id === currentProblem.id);
-      if (index >= 0) {
-        problems[index] = currentProblem;
-      }
+      if (index >= 0) problems[index] = currentProblem;
       
-      // 保存到 Google Sheets Web App
-      const success = await saveToGoogleSheets(problems);
-      
-      if (success) {
-        // 重新渲染列表
-        renderProblemList();
-        
-        alert('代码已保存！数据已同步到云端。');
-      } else {
-        alert('保存失败，请稍后重试。');
+      const success = await saveToCloud();
+      if(success) {
+          codeEditor.style.display = 'none';
+          codePreview.style.display = 'block';
+          editorControls.style.display = 'none';
+          isEditing = false;
       }
     });
 
-    // 取消编辑
     cancelEditBtn.addEventListener('click', () => {
-      if (currentProblem) {
-        codeEditor.value = currentProblem.code;
-        codeContent.textContent = currentProblem.code;
-        codeContent.className = `language-${currentProblem.language || 'javascript'}`;
-        
-        if (typeof Prism !== 'undefined' && Prism.highlightElement) {
-          Prism.highlightElement(codeContent);
-        }
-      }
+      codeContent.textContent = currentProblem.code;
+      if (typeof Prism !== 'undefined') Prism.highlightElement(codeContent);
       
       codeEditor.style.display = 'none';
       codePreview.style.display = 'block';
@@ -750,18 +715,13 @@
       isEditing = false;
     });
 
-    // 返回列表
     backBtn.addEventListener('click', (e) => {
       e.preventDefault();
       pageDetail.style.display = 'none';
       pageList.style.display = 'block';
     });
-
-    // 初始化
-    renderProblemList();
   </script>
 
-  <!-- Prism.js 核心库 -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
 </body>
