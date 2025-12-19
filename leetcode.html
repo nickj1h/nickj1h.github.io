@@ -401,7 +401,7 @@
     // 🔥 从 Google Sheets Web App 加载数据
     async function loadFromGoogleSheets() {
       // 替换为你的 Google Sheets Web App URL
-      const webAppUrl = 'https://script.google.com/macros/s/AKfycbx5pXWI7LBdyW7lBuHSYpZ2X4DpRV40MdcWgQJHzdt2s1-fBuf1KpOpYK-H7rdwyj4/exec';
+      const webAppUrl = 'https://script.google.com/macros/s/AKfycbzMthavdcMS_6TA21dZjppnBkb8AhWP4Bew65h5f6GoMhhJcWQuElDvMCkMe2bFpfE/exec';
       
       try {
         const response = await fetch(webAppUrl + '?action=getProblems');
@@ -422,7 +422,7 @@
     // 🔥 保存数据到 Google Sheets Web App
     async function saveToGoogleSheets(problems) {
       // 替换为你的 Google Sheets Web App URL
-      const webAppUrl = 'https://script.google.com/macros/s/YOUR_WEB_APP_ID/exec';
+      const webAppUrl = 'https://script.google.com/macros/s/AKfycbzMthavdcMS_6TA21dZjppnBkb8AhWP4Bew65h5f6GoMhhJcWQuElDvMCkMe2bFpfE/exec';
       
       try {
         const response = await fetch(webAppUrl + '?action=saveProblems', {
@@ -459,20 +459,8 @@
             id: 1,
             title: "两数之和",
             language: "javascript",
-            description: `给定一个整数数组 nums 和一个整数目标值 target，请你在该数组中找出 和为目标值 target 的那 两个 整数，并返回它们的数组下标。
-你可以假设每种输入只会对应一个答案。但是，数组中同一个元素不能使用两遍。
-你可以按任意顺序返回答案。`,
-            code: `function twoSum(nums, target) {
-  const numMap = new Map();
-  for (let i = 0; i < nums.length; i++) {
-    const complement = target - nums[i];
-    if (numMap.has(complement)) {
-      return [numMap.get(complement), i];
-    }
-    numMap.set(nums[i], i);
-  }
-  return [];
-}`
+            description: `。`,
+            code: `.`
           }
         ];
         
