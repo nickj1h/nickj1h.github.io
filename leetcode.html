@@ -25,7 +25,7 @@
         --fg: #e2e8f0;
         --card-bg: #2d3748;
         --border: #4a5568;
-        --accent: #fdfeff;
+        --accent: #4cc9f0;
         --code-bg: #1a202c;
         --code-fg: #e2e8f0;
         --comment: #a0aec0;
@@ -202,7 +202,6 @@
       tab-size: 2;
     }
     .code-preview {
-      /* 移除默认的 display: none */
       position: relative;
       width: 100%;
       padding: 1.2rem;
@@ -220,9 +219,66 @@
       gap: 0.5rem;
       margin-top: 1rem;
     }
+
+    /* 🔐 编辑密码验证层 */
+    .auth-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+    .auth-form {
+      background: var(--card-bg);
+      padding: 2rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      text-align: center;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .auth-form input {
+      width: 100%;
+      padding: 0.75rem;
+      margin: 0.5rem 0;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--bg);
+      color: var(--fg);
+    }
+    .auth-btn {
+      padding: 0.75rem 1.5rem;
+      margin-top: 1rem;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .auth-btn:hover {
+      opacity: 0.9;
+    }
   </style>
 </head>
 <body>
+  <!-- 🔐 编辑密码验证遮罩层 -->
+  <div id="authLayer" class="auth-container" style="display: none;">
+    <div class="auth-form">
+      <h2>请输入编辑密码</h2>
+      <input type="password" id="passwordInput" placeholder="输入密码">
+      <button class="auth-btn" id="authBtn">确认</button>
+      <p style="margin-top: 1rem; font-size: 0.9rem; opacity: 0.7;">
+        仅用于编辑、删除操作
+      </p>
+    </div>
+  </div>
+
+  <!-- 主内容 -->
   <div class="container">
     <!-- 一级页面：题目列表 -->
     <div id="page-list" class="page">
@@ -285,8 +341,8 @@
       <div class="code-section">
         <h2>参考代码</h2>
         <div class="editor-container">
-          <!-- 使用 pre > code 结构，这是 Prism 的标准 -->
-          <pre id="codePreview" class="code-preview language-javascript"></pre>
+          <!-- 🔥 Prism 高亮容器 -->
+          <pre id="codePreview" class="code-preview"><code id="codeContent"></code></pre>
           <textarea class="code-editor" id="codeEditor" spellcheck="false" style="display: none;"></textarea>
         </div>
         <div class="editor-controls" id="editorControls" style="display: none;">
@@ -298,6 +354,62 @@
   </div>
 
   <script>
+    // 🔐 编辑密码验证逻辑
+    const authLayer = document.getElementById('authLayer');
+    const passwordInput = document.getElementById('passwordInput');
+    const authBtn = document.getElementById('authBtn');
+
+    // 检查编辑密码
+    function checkEditAuth() {
+      const storedHash = localStorage.getItem('editAuthHash');
+      return !!storedHash;
+    }
+
+    // 验证编辑密码
+    function verifyEditAuth() {
+      return new Promise((resolve) => {
+        if (checkEditAuth()) {
+          resolve(true);
+        } else {
+          authLayer.style.display = 'flex';
+          passwordInput.value = '';
+          passwordInput.focus();
+          
+          // 临时事件监听器
+          const handleAuth = () => {
+            const inputPassword = passwordInput.value;
+            if (!inputPassword) {
+              alert('请输入密码！');
+              return;
+            }
+
+            // 简单的哈希验证
+            const expectedPassword = 'nickj1h'; // 请修改为你的密码
+            const inputHash = btoa(unescape(encodeURIComponent(inputPassword)));
+            const expectedHash = btoa(unescape(encodeURIComponent(expectedPassword)));
+
+            if (inputHash === expectedHash) {
+              localStorage.setItem('editAuthHash', expectedHash);
+              authLayer.style.display = 'none';
+              resolve(true);
+            } else {
+              alert('密码错误！');
+              passwordInput.value = '';
+              passwordInput.focus();
+              resolve(false);
+            }
+          };
+
+          authBtn.onclick = handleAuth;
+          passwordInput.onkeypress = (e) => {
+            if (e.key === 'Enter') {
+              handleAuth();
+            }
+          };
+        }
+      });
+    }
+
     // 📚 题目数据（从 localStorage 加载）
     let problems = JSON.parse(localStorage.getItem('leetcodeNotes') || '[]');
     
@@ -347,7 +459,8 @@ var twoSum = function(nums, target) {
     const detailTitle = document.getElementById('detailTitle');
     const detailDesc = document.getElementById('detailDesc');
     const codeEditor = document.getElementById('codeEditor');
-    const codePreview = document.getElementById('codePreview'); // 直接获取 pre 元素
+    const codePreview = document.getElementById('codePreview');
+    const codeContent = document.getElementById('codeContent'); // 获取 code 元素
     const backBtn = document.getElementById('backBtn');
     const addProblemBtn = document.getElementById('addProblemBtn');
     const addFormSection = document.getElementById('addFormSection');
@@ -391,17 +504,25 @@ var twoSum = function(nums, target) {
       detailTitle.textContent = problem.title;
       detailDesc.textContent = problem.description;
 
-      // 设置编辑器内容
-      codeEditor.value = problem.code;
+      // 🔥 设置代码预览（带语法高亮）
+      codeContent.textContent = problem.code;
+      codeContent.className = `language-${problem.language || 'javascript'}`;
       
-      // 🔥 修复：直接设置代码并高亮
-      codePreview.textContent = problem.code;
-      codePreview.className = `code-preview language-${problem.language || 'javascript'}`;
-      Prism.highlightElement(codePreview);
+      // 确保 Prism 已加载后再高亮
+      if (typeof Prism !== 'undefined' && Prism.highlightElement) {
+        Prism.highlightElement(codeContent);
+      } else {
+        // 如果 Prism 还没加载完，延迟执行
+        setTimeout(() => {
+          if (typeof Prism !== 'undefined' && Prism.highlightElement) {
+            Prism.highlightElement(codeContent);
+          }
+        }, 100);
+      }
 
       // 隐藏编辑器，显示预览
       codeEditor.style.display = 'none';
-      codePreview.style.display = 'block'; // 现在是 block
+      codePreview.style.display = 'block';
       editorControls.style.display = 'none';
 
       pageList.style.display = 'none';
@@ -412,9 +533,12 @@ var twoSum = function(nums, target) {
     codeEditor.addEventListener('input', () => {
       if (currentProblem) {
         // 更新预览
-        codePreview.textContent = codeEditor.value;
-        codePreview.className = `code-preview language-${currentProblem.language || 'javascript'}`;
-        Prism.highlightElement(codePreview);
+        codeContent.textContent = codeEditor.value;
+        codeContent.className = `language-${currentProblem.language || 'javascript'}`;
+        
+        if (typeof Prism !== 'undefined' && Prism.highlightElement) {
+          Prism.highlightElement(codeContent);
+        }
       }
     });
 
@@ -424,8 +548,11 @@ var twoSum = function(nums, target) {
       codePreview.scrollLeft = codeEditor.scrollLeft;
     });
 
-    // 显示添加/编辑表单
-    function showForm(problem = null) {
+    // 显示添加/编辑表单（需要密码验证）
+    async function showForm(problem = null) {
+      const auth = await verifyEditAuth();
+      if (!auth) return;
+
       if (problem) {
         // 编辑模式
         formTitle.textContent = '编辑题目';
@@ -447,9 +574,12 @@ var twoSum = function(nums, target) {
       addFormSection.style.display = 'block';
     }
 
-    // 保存表单
-    problemForm.addEventListener('submit', (e) => {
+    // 保存表单（需要密码验证）
+    problemForm.addEventListener('submit', async (e) => {
       e.preventDefault();
+      
+      const auth = await verifyEditAuth();
+      if (!auth) return;
       
       const title = document.getElementById('problemTitle').value;
       const language = document.getElementById('problemLanguage').value;
@@ -495,20 +625,22 @@ var twoSum = function(nums, target) {
       addFormSection.style.display = 'none';
     });
 
-    // 添加新题目按钮
+    // 添加新题目按钮（需要密码验证）
     addProblemBtn.addEventListener('click', () => {
       showForm();
     });
 
-    // 编辑题目按钮
+    // 编辑题目按钮（需要密码验证）
     editBtn.addEventListener('click', () => {
       if (!currentProblem) return;
-      
       showForm(currentProblem);
     });
 
-    // 删除题目
-    function deleteProblem(id) {
+    // 删除题目（需要密码验证）
+    async function deleteProblem(id) {
+      const auth = await verifyEditAuth();
+      if (!auth) return;
+
       if (confirm('确定要删除这个题目吗？')) {
         problems = problems.filter(p => p.id !== id);
         localStorage.setItem('leetcodeNotes', JSON.stringify(problems));
@@ -517,7 +649,7 @@ var twoSum = function(nums, target) {
       }
     }
 
-    // 删除当前题目按钮
+    // 删除当前题目按钮（需要密码验证）
     deleteBtn.addEventListener('click', () => {
       if (!currentProblem) return;
       deleteProblem(currentProblem.id);
@@ -525,20 +657,27 @@ var twoSum = function(nums, target) {
       pageList.style.display = 'block';
     });
 
-    // 编辑代码按钮
-    editBtn.addEventListener('click', () => {
+    // 编辑代码按钮（需要密码验证）
+    editBtn.addEventListener('click', async () => {
       if (!currentProblem) return;
       
+      const auth = await verifyEditAuth();
+      if (!auth) return;
+      
       // 切换到编辑模式
+      codeEditor.value = currentProblem.code;
       codeEditor.style.display = 'block';
       codePreview.style.display = 'none';
       editorControls.style.display = 'flex';
       isEditing = true;
     });
 
-    // 保存编辑
-    saveEditBtn.addEventListener('click', () => {
+    // 保存编辑（需要密码验证）
+    saveEditBtn.addEventListener('click', async () => {
       if (!currentProblem) return;
+      
+      const auth = await verifyEditAuth();
+      if (!auth) return;
       
       // 更新当前题目的代码
       currentProblem.code = codeEditor.value;
@@ -553,9 +692,12 @@ var twoSum = function(nums, target) {
       localStorage.setItem('leetcodeNotes', JSON.stringify(problems));
       
       // 重新渲染详情
-      codePreview.textContent = currentProblem.code;
-      codePreview.className = `code-preview language-${currentProblem.language || 'javascript'}`;
-      Prism.highlightElement(codePreview);
+      codeContent.textContent = currentProblem.code;
+      codeContent.className = `language-${currentProblem.language || 'javascript'}`;
+      
+      if (typeof Prism !== 'undefined' && Prism.highlightElement) {
+        Prism.highlightElement(codeContent);
+      }
       
       // 切换回预览模式
       codeEditor.style.display = 'none';
@@ -570,9 +712,12 @@ var twoSum = function(nums, target) {
     cancelEditBtn.addEventListener('click', () => {
       if (currentProblem) {
         codeEditor.value = currentProblem.code;
-        codePreview.textContent = currentProblem.code;
-        codePreview.className = `code-preview language-${currentProblem.language || 'javascript'}`;
-        Prism.highlightElement(codePreview);
+        codeContent.textContent = currentProblem.code;
+        codeContent.className = `language-${currentProblem.language || 'javascript'}`;
+        
+        if (typeof Prism !== 'undefined' && Prism.highlightElement) {
+          Prism.highlightElement(codeContent);
+        }
       }
       
       codeEditor.style.display = 'none';
