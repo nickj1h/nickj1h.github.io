@@ -401,26 +401,27 @@
     // 🔥 修复后的 Gist 相关函数 - 无需 PAT
     // 1. 从公开 Gist 加载数据
     async function loadFromGist() {
-      const gistId = 'e6eca8ea2e3a1937cf55b22800544cc2'; // 替换为你的Gist ID
-      const url = `https://api.github.com/gists/${gistId}`;
-      
-      try {
-        const response = await fetch(url);
-        const data = await response.json();
-        
-        // 检查 Gist 是否存在
-        if (response.ok && data.files && data.files['problems.json']) {
-          const content = data.files['problems.json'].content;
-          return JSON.parse(content); // 不需要atob解码
-        } else {
-          console.log('Gist 不存在或格式错误，使用空数据');
-          return [];
-        }
-      } catch (error) {
+    const gistId = 'e6eca8ea2e3a1937cf55b22800544cc2'; // 替换为你的Gist ID
+    const url = `https://api.github.com/gists/${gistId}`;
+  
+    try {
+      const response = await fetch(url);
+      const data = await response.json();
+    
+      // 检查 Gist 是否存在
+      if (response.ok && data.files && data.files['problems.json']) {
+      // ✅ 修复：使用 atob 解码 Base64 内容
+      const content = atob(data.files['problems.json'].content);
+      return JSON.parse(content);
+    } else {
+      console.log('Gist 不存在或格式错误，使用空数据');
+      return [];
+    }
+    } catch (error) {
         console.error('加载Gist失败:', error);
         return [];
       }
-    }
+  }
 
     // 2. 保存数据到公开 Gist
     async function saveToGist(problems) {
