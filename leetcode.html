@@ -395,112 +395,89 @@
       });
     }
 
-    // 📚 题目数据（从 localStorage 加载）
+    // 📚 题目数据（从 Google Sheets 加载）
     let problems = [];
 
-    // 🔥 修复后的 Gist 相关函数 - 无需 PAT
-    // 1. 从公开 Gist 加载数据
-    async function loadFromGist() {
-    const gistId = 'e6eca8ea2e3a1937cf55b22800544cc2'; // 替换为你的Gist ID
-    const url = `https://api.github.com/gists/${gistId}`;
-  
-    try {
-      const response = await fetch(url);
-      const data = await response.json();
-    
-      // 检查 Gist 是否存在
-      if (response.ok && data.files && data.files['problems.json']) {
-      // ✅ 修复：使用 atob 解码 Base64 内容
-      const content = atob(data.files['problems.json'].content);
-      return JSON.parse(content);
-    } else {
-      console.log('Gist 不存在或格式错误，使用空数据');
-      return [];
-    }
-    } catch (error) {
-        console.error('加载Gist失败:', error);
-        return [];
-      }
-  }
-
-    // 2. 保存数据到公开 Gist
-    async function saveToGist(problems) {
-      const gistId = 'e6eca8ea2e3a1937cf55b22800544cc2'; // 替换为你的Gist ID
-      const gistUrl = `https://api.github.com/gists/${gistId}`;
-      
-      const gistData = {
-        files: {
-          'problems.json': {
-            content: JSON.stringify(problems)
-          }
-        }
-      };
+    // 🔥 从 Google Sheets Web App 加载数据
+    async function loadFromGoogleSheets() {
+      // 替换为你的 Google Sheets Web App URL
+      const webAppUrl = 'https://script.google.com/macros/s/AKfycbx5pXWI7LBdyW7lBuHSYpZ2X4DpRV40MdcWgQJHzdt2s1-fBuf1KpOpYK-H7rdwyj4/exec';
       
       try {
-        // 检查 Gist 是否存在
-        const response = await fetch(gistUrl);
+        const response = await fetch(webAppUrl + '?action=getProblems');
+        const data = await response.json();
         
-        if (response.ok) {
-          // 更新现有 Gist
-          const updateResponse = await fetch(gistUrl, {
-            method: 'PATCH',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(gistData)
-          });
-          
-          return updateResponse.ok;
+        if (data.success && data.problems) {
+          return data.problems;
         } else {
-          // 创建新 Gist
-          const newGistResponse = await fetch('https://api.github.com/gists', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(gistData)
-          });
-          
-          return newGistResponse.ok;
+          console.log('Google Sheets 数据加载失败，使用默认数据');
+          return [];
         }
       } catch (error) {
-        console.error('保存Gist失败:', error);
+        console.error('加载 Google Sheets 失败:', error);
+        return [];
+      }
+    }
+
+    // 🔥 保存数据到 Google Sheets Web App
+    async function saveToGoogleSheets(problems) {
+      // 替换为你的 Google Sheets Web App URL
+      const webAppUrl = 'https://script.google.com/macros/s/YOUR_WEB_APP_ID/exec';
+      
+      try {
+        const response = await fetch(webAppUrl + '?action=saveProblems', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ problems })
+        });
+        
+        const data = await response.json();
+        return data.success;
+      } catch (error) {
+        console.error('保存到 Google Sheets 失败:', error);
         return false;
       }
     }
 
-    // 3. 从Gist重新加载数据并渲染列表
-    async function reloadFromGistAndRender() {
-      problems = await loadFromGist();
+    // 从 Google Sheets Web App 重新加载数据并渲染列表
+    async function reloadFromGoogleSheetsAndRender() {
+      problems = await loadFromGoogleSheets();
       renderProblemList();
     }
 
     (async () => {
-      // 从 Gist 加载数据
-      problems = await loadFromGist();
+      // 从 Google Sheets Web App 加载数据
+      problems = await loadFromGoogleSheets();
       
-      // 如果 Gist 为空，使用默认数据
+      // 如果 Google Sheets 为空，使用默认数据
       if (problems.length === 0) {
+        // 使用默认数据
         problems = [
           {
             id: 1,
             title: "两数之和",
             language: "javascript",
-            description: `给定一个整数数组 nums 和一个整数目标值 target，请你在该数组中找出和为目标值 target 的那两个整数，并返回它们的数组下标。
-
-你可以假设每种输入只会对应一个答案。但是，数组中同一个元素在答案里不能重复出现。
-
-示例 1：
-输入：nums = [2,7,11,15], target = 9
-输出：[0,1]
-解释：因为 nums[0] + nums[1] == 9 ，返回 [0, 1] 。`,
-            code: `
-};`
+            description: `给定一个整数数组 nums 和一个整数目标值 target，请你在该数组中找出 和为目标值 target 的那 两个 整数，并返回它们的数组下标。
+你可以假设每种输入只会对应一个答案。但是，数组中同一个元素不能使用两遍。
+你可以按任意顺序返回答案。`,
+            code: `function twoSum(nums, target) {
+  const numMap = new Map();
+  for (let i = 0; i < nums.length; i++) {
+    const complement = target - nums[i];
+    if (numMap.has(complement)) {
+      return [numMap.get(complement), i];
+    }
+    numMap.set(nums[i], i);
+  }
+  return [];
+}`
           }
         ];
         
-        // 保存默认数据到 Gist
-        await saveToGist(problems);
+        // 保存到 Google Sheets Web App
+        await saveToGoogleSheets(problems);
       }
       
       renderProblemList();
@@ -662,12 +639,12 @@
         problems.push(problem); // 新增
       }
 
-      // 保存到 Gist
-      const success = await saveToGist(problems);
+      // 保存到 Google Sheets Web App
+      const success = await saveToGoogleSheets(problems);
       
       if (success) {
-        // 重新从Gist加载数据并渲染列表
-        await reloadFromGistAndRender();
+        // 重新渲染列表
+        renderProblemList();
         
         // 隐藏表单
         addFormSection.style.display = 'none';
@@ -702,12 +679,12 @@
       if (confirm('确定要删除这个题目吗？')) {
         problems = problems.filter(p => p.id !== id);
         
-        // 保存到 Gist
-        const success = await saveToGist(problems);
+        // 保存到 Google Sheets Web App
+        const success = await saveToGoogleSheets(problems);
         
         if (success) {
-          // 重新从Gist加载数据并渲染列表
-          await reloadFromGistAndRender();
+          // 重新渲染列表
+          renderProblemList();
           alert('题目已删除！数据已同步到云端。');
         } else {
           alert('删除失败，请稍后重试。');
@@ -754,12 +731,12 @@
         problems[index] = currentProblem;
       }
       
-      // 保存到 Gist
-      const success = await saveToGist(problems);
+      // 保存到 Google Sheets Web App
+      const success = await saveToGoogleSheets(problems);
       
       if (success) {
-        // 重新从Gist加载数据并渲染列表
-        await reloadFromGistAndRender();
+        // 重新渲染列表
+        renderProblemList();
         
         alert('代码已保存！数据已同步到云端。');
       } else {
