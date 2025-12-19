@@ -411,7 +411,7 @@
         // 检查 Gist 是否存在
         if (response.ok && data.files && data.files['problems.json']) {
           const content = data.files['problems.json'].content;
-          return JSON.parse(atob(content));
+          return JSON.parse(content); // 不需要atob解码
         } else {
           console.log('Gist 不存在或格式错误，使用空数据');
           return [];
@@ -468,11 +468,55 @@
       }
     }
 
+    // 3. 从Gist重新加载数据并渲染列表
+    async function reloadFromGistAndRender() {
+      problems = await loadFromGist();
+      renderProblemList();
+    }
+
     (async () => {
       // 从 Gist 加载数据
       problems = await loadFromGist();
       
       // 如果 Gist 为空，使用默认数据
+      if (problems.length === 0) {
+        problems = [
+          {
+            id: 1,
+            title: "两数之和",
+            language: "javascript",
+            description: `给定一个整数数组 nums 和一个整数目标值 target，请你在该数组中找出和为目标值 target 的那两个整数，并返回它们的数组下标。
+
+你可以假设每种输入只会对应一个答案。但是，数组中同一个元素在答案里不能重复出现。
+
+示例 1：
+输入：nums = [2,7,11,15], target = 9
+输出：[0,1]
+解释：因为 nums[0] + nums[1] == 9 ，返回 [0, 1] 。`,
+            code: `// 哈希表解法 O(n)
+var twoSum = function(nums, target) {
+  // 创建哈希表存储 {值: 下标}
+  const map = new Map();
+  
+  for (let i = 0; i < nums.length; i++) {
+    const complement = target - nums[i];
+    
+    if (map.has(complement)) {
+      return [map.get(complement), i];
+    }
+    
+    // 否则将当前数存入哈希表
+    map.set(nums[i], i);
+  }
+  
+  return []; // 题目保证有解，此行不会执行
+};`
+          }
+        ];
+        
+        // 保存默认数据到 Gist
+        await saveToGist(problems);
+      }
       
       renderProblemList();
     })();
@@ -633,19 +677,20 @@
         problems.push(problem); // 新增
       }
 
-      // 保存到 localStorage
-      localStorage.setItem('leetcodeNotes', JSON.stringify(problems));
-      
       // 保存到 Gist
-      await saveToGist(problems);
+      const success = await saveToGist(problems);
       
-      // 重新渲染列表
-      renderProblemList();
-      
-      // 隐藏表单
-      addFormSection.style.display = 'none';
-      
-      alert('题目保存成功！数据已同步到云端。');
+      if (success) {
+        // 重新从Gist加载数据并渲染列表
+        await reloadFromGistAndRender();
+        
+        // 隐藏表单
+        addFormSection.style.display = 'none';
+        
+        alert('题目保存成功！数据已同步到云端。');
+      } else {
+        alert('保存失败，请稍后重试。');
+      }
     });
 
     // 取消表单
@@ -671,10 +716,17 @@
 
       if (confirm('确定要删除这个题目吗？')) {
         problems = problems.filter(p => p.id !== id);
-        localStorage.setItem('leetcodeNotes', JSON.stringify(problems));
-        await saveToGist(problems);
-        renderProblemList();
-        alert('题目已删除！数据已同步到云端。');
+        
+        // 保存到 Gist
+        const success = await saveToGist(problems);
+        
+        if (success) {
+          // 重新从Gist加载数据并渲染列表
+          await reloadFromGistAndRender();
+          alert('题目已删除！数据已同步到云端。');
+        } else {
+          alert('删除失败，请稍后重试。');
+        }
       }
     }
 
@@ -717,27 +769,17 @@
         problems[index] = currentProblem;
       }
       
-      // 保存到 localStorage
-      localStorage.setItem('leetcodeNotes', JSON.stringify(problems));
-      
       // 保存到 Gist
-      await saveToGist(problems);
+      const success = await saveToGist(problems);
       
-      // 重新渲染详情
-      codeContent.textContent = currentProblem.code;
-      codeContent.className = `language-${currentProblem.language || 'javascript'}`;
-      
-      if (typeof Prism !== 'undefined' && Prism.highlightElement) {
-        Prism.highlightElement(codeContent);
+      if (success) {
+        // 重新从Gist加载数据并渲染列表
+        await reloadFromGistAndRender();
+        
+        alert('代码已保存！数据已同步到云端。');
+      } else {
+        alert('保存失败，请稍后重试。');
       }
-      
-      // 切换回预览模式
-      codeEditor.style.display = 'none';
-      codePreview.style.display = 'block';
-      editorControls.style.display = 'none';
-      isEditing = false;
-      
-      alert('代码已保存！数据已同步到云端。');
     });
 
     // 取消编辑
