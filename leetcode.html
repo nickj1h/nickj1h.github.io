@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>LeetCode 刷题笔记</title>
+  
+  <!-- 🔥 Prism.js 语法高亮主题 -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-one-dark.min.css" rel="stylesheet" />
+  
+  <style>
+    :root {
+      --bg: #ffffff;
+      --fg: #2d3748;
+      --card-bg: #f8f9fa;
+      --border: #e2e8f0;
+      --accent: #4361ee;
+      --code-bg: #2d3748;
+      --code-fg: #e2e8f0;
+      --comment: #a0aec0;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #1a202c;
+        --fg: #e2e8f0;
+        --card-bg: #2d3748;
+        --border: #4a5568;
+        --accent: #4cc9f0;
+        --code-bg: #1a202c;
+        --code-fg: #e2e8f0;
+        --comment: #a0aec0;
+      }
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Microsoft YaHei', sans-serif;
+      background: var(--bg);
+      color: var(--fg);
+      line-height: 1.6;
+      padding: 1.5rem;
+    }
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    h1 {
+      font-size: 2rem;
+      color: var(--accent);
+    }
+    .btn-back {
+      display: inline-block;
+      margin-bottom: 1.5rem;
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .btn-back:hover {
+      text-decoration: underline;
+    }
+
+    /* 按钮样式 */
+    .btn {
+      padding: 0.5rem 1rem;
+      border: 1px solid var(--border);
+      background: var(--card-bg);
+      color: var(--fg);
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      margin: 0.25rem;
+    }
+    .btn:hover {
+      background: var(--accent);
+      color: white;
+      border-color: var(--accent);
+    }
+    .btn-danger {
+      background: #e53e3e;
+      border-color: #e53e3e;
+      color: white;
+    }
+    .btn-danger:hover {
+      background: #c53030;
+      border-color: #c53030;
+    }
+
+    /* 题目列表 */
+    .problem-list {
+      display: grid;
+      gap: 1rem;
+    }
+    .problem-item {
+      background: var(--card-bg);
+      padding: 1rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .problem-item:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    .problem-title {
+      font-weight: 600;
+      font-size: 1.1rem;
+      color: var(--accent);
+    }
+    .problem-desc-preview {
+      margin-top: 0.5rem;
+      font-size: 0.95rem;
+      opacity: 0.8;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .problem-actions {
+      margin-top: 0.5rem;
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    /* 添加/编辑题目表单 */
+    .form-section {
+      background: var(--card-bg);
+      padding: 1.5rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      margin-bottom: 2rem;
+    }
+    .form-group {
+      margin-bottom: 1rem;
+    }
+    .form-group label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+    }
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: inherit;
+      font-size: 1rem;
+    }
+    .form-group textarea {
+      min-height: 150px;
+      resize: vertical;
+    }
+    .form-actions {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 1rem;
+    }
+
+    /* 题目详情 */
+    .problem-detail {
+      display: none; /* 默认隐藏 */
+    }
+    .problem-header {
+      margin-bottom: 1.5rem;
+    }
+    .problem-description {
+      background: var(--card-bg);
+      padding: 1.5rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      margin-bottom: 2rem;
+      white-space: pre-wrap;
+      font-family: inherit;
+    }
+    
+    /* 编辑器区域 */
+    .editor-container {
+      position: relative;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    .code-editor {
+      width: 100%;
+      min-height: 300px;
+      padding: 1.2rem;
+      background: var(--code-bg);
+      color: var(--code-fg);
+      font-family: 'Fira Code', 'Consolas', 'Courier New', monospace;
+      font-size: 0.95rem;
+      line-height: 1.4;
+      resize: vertical;
+      border: none;
+      outline: none;
+      tab-size: 2;
+    }
+    .code-preview {
+      /* 移除默认的 display: none */
+      position: relative;
+      width: 100%;
+      padding: 1.2rem;
+      background: var(--code-bg);
+      color: var(--code-fg);
+      font-family: 'Fira Code', 'Consolas', 'Courier New', monospace;
+      font-size: 0.95rem;
+      line-height: 1.4;
+      white-space: pre;
+      overflow-x: auto;
+      margin: 0;
+    }
+    .editor-controls {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- 一级页面：题目列表 -->
+    <div id="page-list" class="page">
+      <header>
+        <h1>LeetCode 刷题笔记</h1>
+        <button class="btn" id="addProblemBtn">+ 添加新题目</button>
+      </header>
+      
+      <!-- 添加/编辑题目表单 -->
+      <div id="addFormSection" class="form-section" style="display: none;">
+        <h3 id="formTitle">添加新题目</h3>
+        <form id="problemForm">
+          <input type="hidden" id="problemId">
+          <div class="form-group">
+            <label for="problemTitle">题目标题</label>
+            <input type="text" id="problemTitle" required placeholder="例如：两数之和">
+          </div>
+          <div class="form-group">
+            <label for="problemLanguage">编程语言</label>
+            <select id="problemLanguage">
+              <option value="javascript">JavaScript</option>
+              <option value="python">Python</option>
+              <option value="java">Java</option>
+              <option value="cpp">C++</option>
+              <option value="go">Go</option>
+              <option value="rust">Rust</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="problemDescription">题目描述</label>
+            <textarea id="problemDescription" required placeholder="输入题目描述..."></textarea>
+          </div>
+          <div class="form-group">
+            <label for="problemCode">参考代码</label>
+            <textarea id="problemCode" required placeholder="输入你的代码..."></textarea>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn">保存题目</button>
+            <button type="button" class="btn" id="cancelFormBtn">取消</button>
+          </div>
+        </form>
+      </div>
+      
+      <div class="problem-list" id="problemList">
+        <!-- 动态生成 -->
+      </div>
+    </div>
+
+    <!-- 二级页面：题目详情 -->
+    <div id="page-detail" class="page problem-detail">
+      <a href="#" class="btn-back" id="backBtn">← 返回列表</a>
+      <div class="problem-header">
+        <h2 id="detailTitle"></h2>
+        <div style="margin-top: 0.5rem;">
+          <button class="btn" id="editBtn">编辑</button>
+          <button class="btn btn-danger" id="deleteBtn">删除</button>
+        </div>
+      </div>
+      <div class="problem-description" id="detailDesc"></div>
+      <div class="code-section">
+        <h2>参考代码</h2>
+        <div class="editor-container">
+          <!-- 使用 pre > code 结构，这是 Prism 的标准 -->
+          <pre id="codePreview" class="code-preview language-javascript"></pre>
+          <textarea class="code-editor" id="codeEditor" spellcheck="false" style="display: none;"></textarea>
+        </div>
+        <div class="editor-controls" id="editorControls" style="display: none;">
+          <button class="btn" id="saveEditBtn">保存修改</button>
+          <button class="btn" id="cancelEditBtn">取消编辑</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 📚 题目数据（从 localStorage 加载）
+    let problems = JSON.parse(localStorage.getItem('leetcodeNotes') || '[]');
+    
+    // 如果是空数组，添加一些示例数据
+    if (problems.length === 0) {
+      problems = [
+        {
+          id: 1,
+          title: "两数之和",
+          language: "javascript",
+          description: `给定一个整数数组 nums 和一个整数目标值 target，请你在该数组中找出和为目标值 target 的那两个整数，并返回它们的数组下标。
+
+你可以假设每种输入只会对应一个答案。但是，数组中同一个元素在答案里不能重复出现。
+
+示例 1：
+输入：nums = [2,7,11,15], target = 9
+输出：[0,1]
+解释：因为 nums[0] + nums[1] == 9 ，返回 [0, 1] 。`,
+          code: `// 哈希表解法 O(n)
+var twoSum = function(nums, target) {
+  // 创建哈希表存储 {值: 下标}
+  const map = new Map();
+  
+  for (let i = 0; i < nums.length; i++) {
+    const complement = target - nums[i];
+    
+    // 如果补数存在，直接返回
+    if (map.has(complement)) {
+      return [map.get(complement), i];
+    }
+    
+    // 否则将当前数存入哈希表
+    map.set(nums[i], i);
+  }
+  
+  return []; // 题目保证有解，此行不会执行
+};`
+        }
+      ];
+      localStorage.setItem('leetcodeNotes', JSON.stringify(problems));
+    }
+
+    // DOM 元素
+    const pageList = document.getElementById('page-list');
+    const pageDetail = document.getElementById('page-detail');
+    const problemListEl = document.getElementById('problemList');
+    const detailTitle = document.getElementById('detailTitle');
+    const detailDesc = document.getElementById('detailDesc');
+    const codeEditor = document.getElementById('codeEditor');
+    const codePreview = document.getElementById('codePreview'); // 直接获取 pre 元素
+    const backBtn = document.getElementById('backBtn');
+    const addProblemBtn = document.getElementById('addProblemBtn');
+    const addFormSection = document.getElementById('addFormSection');
+    const problemForm = document.getElementById('problemForm');
+    const cancelFormBtn = document.getElementById('cancelFormBtn');
+    const formTitle = document.getElementById('formTitle');
+    const editBtn = document.getElementById('editBtn');
+    const deleteBtn = document.getElementById('deleteBtn');
+    const saveEditBtn = document.getElementById('saveEditBtn');
+    const cancelEditBtn = document.getElementById('cancelEditBtn');
+    const editorControls = document.getElementById('editorControls');
+
+    // 当前选中的题目
+    let currentProblem = null;
+    let isEditing = false;
+
+    // 渲染题目列表
+    function renderProblemList() {
+      problemListEl.innerHTML = '';
+      problems.forEach(problem => {
+        const item = document.createElement('div');
+        item.className = 'problem-item';
+        item.innerHTML = `
+          <div class="problem-title">${problem.title}</div>
+          <div class="problem-desc-preview">${problem.description.split('\n')[0]}</div>
+          <div class="problem-actions">
+            <button class="btn" onclick="editProblem(${problem.id})">编辑</button>
+            <button class="btn btn-danger" onclick="deleteProblem(${problem.id})">删除</button>
+          </div>
+        `;
+        item.onclick = () => showProblemDetail(problem);
+        problemListEl.appendChild(item);
+      });
+    }
+
+    // 显示题目详情
+    function showProblemDetail(problem) {
+      currentProblem = problem;
+      isEditing = false;
+      
+      detailTitle.textContent = problem.title;
+      detailDesc.textContent = problem.description;
+
+      // 设置编辑器内容
+      codeEditor.value = problem.code;
+      
+      // 🔥 修复：直接设置代码并高亮
+      codePreview.textContent = problem.code;
+      codePreview.className = `code-preview language-${problem.language || 'javascript'}`;
+      Prism.highlightElement(codePreview);
+
+      // 隐藏编辑器，显示预览
+      codeEditor.style.display = 'none';
+      codePreview.style.display = 'block'; // 现在是 block
+      editorControls.style.display = 'none';
+
+      pageList.style.display = 'none';
+      pageDetail.style.display = 'block';
+    }
+
+    // 监听编辑器内容变化
+    codeEditor.addEventListener('input', () => {
+      if (currentProblem) {
+        // 更新预览
+        codePreview.textContent = codeEditor.value;
+        codePreview.className = `code-preview language-${currentProblem.language || 'javascript'}`;
+        Prism.highlightElement(codePreview);
+      }
+    });
+
+    // 滚动同步（编辑器滚动时，预览也滚动）
+    codeEditor.addEventListener('scroll', () => {
+      codePreview.scrollTop = codeEditor.scrollTop;
+      codePreview.scrollLeft = codeEditor.scrollLeft;
+    });
+
+    // 显示添加/编辑表单
+    function showForm(problem = null) {
+      if (problem) {
+        // 编辑模式
+        formTitle.textContent = '编辑题目';
+        document.getElementById('problemTitle').value = problem.title;
+        document.getElementById('problemLanguage').value = problem.language || 'javascript';
+        document.getElementById('problemDescription').value = problem.description;
+        document.getElementById('problemCode').value = problem.code;
+        document.getElementById('problemId').value = problem.id;
+      } else {
+        // 添加模式
+        formTitle.textContent = '添加新题目';
+        document.getElementById('problemForm').reset();
+        document.getElementById('problemLanguage').value = 'javascript';
+        document.getElementById('problemId').value = '';
+      }
+      
+      pageList.style.display = 'block';
+      pageDetail.style.display = 'none';
+      addFormSection.style.display = 'block';
+    }
+
+    // 保存表单
+    problemForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      
+      const title = document.getElementById('problemTitle').value;
+      const language = document.getElementById('problemLanguage').value;
+      const description = document.getElementById('problemDescription').value;
+      const code = document.getElementById('problemCode').value;
+      const id = document.getElementById('problemId').value || Date.now();
+      
+      if (!title || !description || !code) {
+        alert('请填写完整信息！');
+        return;
+      }
+
+      const problem = {
+        id: parseInt(id),
+        title,
+        language,
+        description,
+        code
+      };
+
+      // 查找是否为编辑模式
+      const index = problems.findIndex(p => p.id === problem.id);
+      if (index >= 0) {
+        problems[index] = problem; // 更新
+      } else {
+        problems.push(problem); // 新增
+      }
+
+      // 保存到 localStorage
+      localStorage.setItem('leetcodeNotes', JSON.stringify(problems));
+      
+      // 重新渲染列表
+      renderProblemList();
+      
+      // 隐藏表单
+      addFormSection.style.display = 'none';
+      
+      alert('题目保存成功！');
+    });
+
+    // 取消表单
+    cancelFormBtn.addEventListener('click', () => {
+      addFormSection.style.display = 'none';
+    });
+
+    // 添加新题目按钮
+    addProblemBtn.addEventListener('click', () => {
+      showForm();
+    });
+
+    // 编辑题目按钮
+    editBtn.addEventListener('click', () => {
+      if (!currentProblem) return;
+      
+      showForm(currentProblem);
+    });
+
+    // 删除题目
+    function deleteProblem(id) {
+      if (confirm('确定要删除这个题目吗？')) {
+        problems = problems.filter(p => p.id !== id);
+        localStorage.setItem('leetcodeNotes', JSON.stringify(problems));
+        renderProblemList();
+        alert('题目已删除！');
+      }
+    }
+
+    // 删除当前题目按钮
+    deleteBtn.addEventListener('click', () => {
+      if (!currentProblem) return;
+      deleteProblem(currentProblem.id);
+      pageDetail.style.display = 'none';
+      pageList.style.display = 'block';
+    });
+
+    // 编辑代码按钮
+    editBtn.addEventListener('click', () => {
+      if (!currentProblem) return;
+      
+      // 切换到编辑模式
+      codeEditor.style.display = 'block';
+      codePreview.style.display = 'none';
+      editorControls.style.display = 'flex';
+      isEditing = true;
+    });
+
+    // 保存编辑
+    saveEditBtn.addEventListener('click', () => {
+      if (!currentProblem) return;
+      
+      // 更新当前题目的代码
+      currentProblem.code = codeEditor.value;
+      
+      // 更新到数组中
+      const index = problems.findIndex(p => p.id === currentProblem.id);
+      if (index >= 0) {
+        problems[index] = currentProblem;
+      }
+      
+      // 保存到 localStorage
+      localStorage.setItem('leetcodeNotes', JSON.stringify(problems));
+      
+      // 重新渲染详情
+      codePreview.textContent = currentProblem.code;
+      codePreview.className = `code-preview language-${currentProblem.language || 'javascript'}`;
+      Prism.highlightElement(codePreview);
+      
+      // 切换回预览模式
+      codeEditor.style.display = 'none';
+      codePreview.style.display = 'block';
+      editorControls.style.display = 'none';
+      isEditing = false;
+      
+      alert('代码已保存！');
+    });
+
+    // 取消编辑
+    cancelEditBtn.addEventListener('click', () => {
+      if (currentProblem) {
+        codeEditor.value = currentProblem.code;
+        codePreview.textContent = currentProblem.code;
+        codePreview.className = `code-preview language-${currentProblem.language || 'javascript'}`;
+        Prism.highlightElement(codePreview);
+      }
+      
+      codeEditor.style.display = 'none';
+      codePreview.style.display = 'block';
+      editorControls.style.display = 'none';
+      isEditing = false;
+    });
+
+    // 返回列表
+    backBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      pageDetail.style.display = 'none';
+      pageList.style.display = 'block';
+    });
+
+    // 初始化
+    renderProblemList();
+  </script>
+
+  <!-- 🔥 Prism.js 核心库 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+</body>
+</html>
