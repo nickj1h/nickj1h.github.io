@@ -354,59 +354,47 @@
   </div>
 
   <script>
-    // 🔐 编辑密码验证逻辑
-    const authLayer = document.getElementById('authLayer');
-    const passwordInput = document.getElementById('passwordInput');
-    const authBtn = document.getElementById('authBtn');
-
-    // 检查编辑密码
-    function checkEditAuth() {
-      const storedHash = localStorage.getItem('editAuthHash');
-      return !!storedHash;
-    }
-
-    // 验证编辑密码
-    function verifyEditAuth() {
+    // 🔐 简单的密码验证函数
+    function verifyPassword() {
       return new Promise((resolve) => {
-        if (checkEditAuth()) {
-          resolve(true);
-        } else {
-          authLayer.style.display = 'flex';
-          passwordInput.value = '';
-          passwordInput.focus();
-          
-          // 临时事件监听器
-          const handleAuth = () => {
-            const inputPassword = passwordInput.value;
-            if (!inputPassword) {
-              alert('请输入密码！');
-              return;
-            }
+        // 显示密码验证层
+        document.getElementById('authLayer').style.display = 'flex';
+        const passwordInput = document.getElementById('passwordInput');
+        const authBtn = document.getElementById('authBtn');
+        
+        passwordInput.value = '';
+        passwordInput.focus();
+        
+        // 临时事件监听器
+        const handleAuth = () => {
+          const inputPassword = passwordInput.value;
+          if (!inputPassword) {
+            alert('请输入密码！');
+            return;
+          }
 
-            // 简单的哈希验证
-            const expectedPassword = 'nickj1h'; // 请修改为你的密码
-            const inputHash = btoa(unescape(encodeURIComponent(inputPassword)));
-            const expectedHash = btoa(unescape(encodeURIComponent(expectedPassword)));
+          // 简单的哈希验证
+          const expectedPassword = 'your-secret-password'; // 请修改为你的密码
+          const inputHash = btoa(unescape(encodeURIComponent(inputPassword)));
+          const expectedHash = btoa(unescape(encodeURIComponent(expectedPassword)));
 
-            if (inputHash === expectedHash) {
-              localStorage.setItem('editAuthHash', expectedHash);
-              authLayer.style.display = 'none';
-              resolve(true);
-            } else {
-              alert('密码错误！');
-              passwordInput.value = '';
-              passwordInput.focus();
-              resolve(false);
-            }
-          };
+          if (inputHash === expectedHash) {
+            document.getElementById('authLayer').style.display = 'none';
+            resolve(true);
+          } else {
+            alert('密码错误！');
+            passwordInput.value = '';
+            passwordInput.focus();
+            resolve(false);
+          }
+        };
 
-          authBtn.onclick = handleAuth;
-          passwordInput.onkeypress = (e) => {
-            if (e.key === 'Enter') {
-              handleAuth();
-            }
-          };
-        }
+        authBtn.onclick = handleAuth;
+        passwordInput.onkeypress = (e) => {
+          if (e.key === 'Enter') {
+            handleAuth();
+          }
+        };
       });
     }
 
@@ -550,7 +538,7 @@ var twoSum = function(nums, target) {
 
     // 显示添加/编辑表单（需要密码验证）
     async function showForm(problem = null) {
-      const auth = await verifyEditAuth();
+      const auth = await verifyPassword();
       if (!auth) return;
 
       if (problem) {
@@ -578,7 +566,7 @@ var twoSum = function(nums, target) {
     problemForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       
-      const auth = await verifyEditAuth();
+      const auth = await verifyPassword();
       if (!auth) return;
       
       const title = document.getElementById('problemTitle').value;
@@ -638,7 +626,7 @@ var twoSum = function(nums, target) {
 
     // 删除题目（需要密码验证）
     async function deleteProblem(id) {
-      const auth = await verifyEditAuth();
+      const auth = await verifyPassword();
       if (!auth) return;
 
       if (confirm('确定要删除这个题目吗？')) {
@@ -661,7 +649,7 @@ var twoSum = function(nums, target) {
     editBtn.addEventListener('click', async () => {
       if (!currentProblem) return;
       
-      const auth = await verifyEditAuth();
+      const auth = await verifyPassword();
       if (!auth) return;
       
       // 切换到编辑模式
@@ -676,7 +664,7 @@ var twoSum = function(nums, target) {
     saveEditBtn.addEventListener('click', async () => {
       if (!currentProblem) return;
       
-      const auth = await verifyEditAuth();
+      const auth = await verifyPassword();
       if (!auth) return;
       
       // 更新当前题目的代码
