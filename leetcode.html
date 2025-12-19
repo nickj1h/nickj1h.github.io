@@ -476,45 +476,6 @@
       problems = await loadFromGist();
       
       // 如果 Gist 为空，使用默认数据
-      if (problems.length === 0) {
-        problems = [
-          {
-            id: 1,
-            title: "两数之和",
-            language: "javascript",
-            description: `给定一个整数数组 nums 和一个整数目标值 target，请你在该数组中找出和为目标值 target 的那两个整数，并返回它们的数组下标。
-
-你可以假设每种输入只会对应一个答案。但是，数组中同一个元素在答案里不能重复出现。
-
-示例 1：
-输入：nums = [2,7,11,15], target = 9
-输出：[0,1]
-解释：因为 nums[0] + nums[1] == 9 ，返回 [0, 1] 。`,
-            code: `// 哈希表解法 O(n)
-var twoSum = function(nums, target) {
-  // 创建哈希表存储 {值: 下标}
-  const map = new Map();
-  
-  for (let i = 0; i < nums.length; i++) {
-    const complement = target - nums[i];
-    
-    // 如果补数存在，直接返回
-    if (map.has(complement)) {
-      return [map.get(complement), i];
-    }
-    
-    // 否则将当前数存入哈希表
-    map.set(nums[i], i);
-  }
-  
-  return []; // 题目保证有解，此行不会执行
-};`
-          }
-        ];
-        
-        // 保存默认数据到 Gist
-        await saveToGist(problems);
-      }
       
       renderProblemList();
     })();
